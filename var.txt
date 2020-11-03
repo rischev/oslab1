@@ -1,0 +1,11 @@
+A=266
+B=0x7FA0C251
+C=malloc
+D=79
+E=100
+F=block
+G=105
+H=random
+I=39
+J=avg
+K=flock
