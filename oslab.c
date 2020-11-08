@@ -7,7 +7,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
-#include <sys/time.h>
 #include <errno.h>
 
 typedef struct _malloc_data {
@@ -34,6 +33,7 @@ typedef struct _readF_data {
 
 pthread_mutex_t countMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mallocMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t randomMutex = PTHREAD_MUTEX_INITIALIZER;
 void *fillMalloc(void* arg);
 void *writeFile(void* arg);
 void *readFile(void* arg);
@@ -43,7 +43,7 @@ int main() {
   const int Abytes = A * 1024 * 1024;
   const char C[] = "malloc";
   const int D = 79;
-  const int E = 1;
+  const int E = 10;
   const int Ebytes = E * 1024 * 1024;
   const char F[] = "block";
   const int G = 105;
@@ -52,17 +52,14 @@ int main() {
   const char J[] = "avg";
   const char K[] = "flock";
   const char numOfFiles = 3;
-  FILE* rFile = fopen("/dev/urandom", "r");
-  clock_t begin, end;
-  int duration;
 
   for ( ; ; ) {
+    FILE* rFile = fopen("/dev/urandom", "r");
     pthread_t mallocThr[D];
     malloc_data mallocThr_data[D];
     int* start = (int*) malloc(Abytes), *nxt = start;
     int numOfInts = Abytes / sizeof(int), length = numOfInts / D;
     if (start != NULL) {
-      begin = clock();
       for (int i = 0; i < D; i++) {
         mallocThr_data[i].input = rFile;
         mallocThr_data[i].address = nxt;
@@ -110,9 +107,6 @@ int main() {
       }
 
       for (int f = 0; f < numOfFiles; f++) { close(files[f]); }
-      end = clock();
-      duration = (int)(end - begin);
-      printf("Finished one iteration in %d clocks\n", duration);
     }
     else {
       printf("Could not allocate memory\n");
@@ -137,17 +131,21 @@ void *fillMalloc(void* arg) {
 void *writeFile(void* arg) {
   writeF_data *data = (writeF_data *) arg;
   int result;
+  /*
   char* buf = (char*) malloc(data->block);
   if (buf == NULL) {
     printf("Could not allocate write buffer\n");
     pthread_exit(NULL);
   }
+  */
+  pthread_mutex_lock(&randomMutex);
   char* random = data->start + rand() % data->upperBound - data->block;
-  for (int i = 0; i < data->block; i++) { buf[i] = *(random++); }
+  pthread_mutex_unlock(&randomMutex);
+  //for (int i = 0; i < data->block; i++) { buf[i] = *(random++); }
 
   flock(data->file, LOCK_EX);
   lseek(data->file, 0L, SEEK_END);
-  result = write(data->file, buf, data->block);
+  result = write(data->file, random, data->block);
   flock(data->file, LOCK_UN);
 
   if (result == -1) { printf("Write thread no.%i failed: %s\n", data->tid, strerror(errno)); }
