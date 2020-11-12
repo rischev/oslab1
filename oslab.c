@@ -112,8 +112,8 @@ int main() {
       printf("Could not allocate memory\n");
     }
     free(start);
-    return EXIT_SUCCESS;
   }
+  return EXIT_SUCCESS;
 }
 
 void *fillMalloc(void* arg) {
@@ -131,17 +131,9 @@ void *fillMalloc(void* arg) {
 void *writeFile(void* arg) {
   writeF_data *data = (writeF_data *) arg;
   int result;
-  /*
-  char* buf = (char*) malloc(data->block);
-  if (buf == NULL) {
-    printf("Could not allocate write buffer\n");
-    pthread_exit(NULL);
-  }
-  */
   pthread_mutex_lock(&randomMutex);
   char* random = data->start + rand() % data->upperBound - data->block;
   pthread_mutex_unlock(&randomMutex);
-  //for (int i = 0; i < data->block; i++) { buf[i] = *(random++); }
 
   flock(data->file, LOCK_EX);
   lseek(data->file, 0L, SEEK_END);
