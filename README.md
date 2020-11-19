@@ -3,4 +3,3 @@
 
 `$./oslab.out`
 
-# TODO: pthread_setschedule(...)
